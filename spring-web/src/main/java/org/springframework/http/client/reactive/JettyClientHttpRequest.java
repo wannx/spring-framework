@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import reactor.core.publisher.MonoSink;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.core.io.buffer.DataBufferUtils;
-import org.springframework.core.io.buffer.PooledDataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -103,7 +102,7 @@ class JettyClientHttpRequest extends AbstractClientHttpRequest {
 	public Mono<Void> writeAndFlushWith(Publisher<? extends Publisher<? extends DataBuffer>> body) {
 		return writeWith(Flux.from(body)
 				.flatMap(Function.identity())
-				.doOnDiscard(PooledDataBuffer.class, DataBufferUtils::release));
+				.doOnDiscard(DataBuffer.class, DataBufferUtils::release));
 	}
 
 	private String getContentType() {
@@ -112,7 +111,7 @@ class JettyClientHttpRequest extends AbstractClientHttpRequest {
 	}
 
 	private ContentChunk toContentChunk(DataBuffer buffer, MonoSink<Void> sink) {
-		return new ContentChunk(buffer.asByteBuffer(), new Callback() {
+		return new ContentChunk(buffer.toByteBuffer(), new Callback() {
 			@Override
 			public void succeeded() {
 				DataBufferUtils.release(buffer);
@@ -124,7 +123,6 @@ class JettyClientHttpRequest extends AbstractClientHttpRequest {
 			}
 		});
 	}
-
 
 	@Override
 	protected void applyCookies() {
@@ -144,9 +142,13 @@ class JettyClientHttpRequest extends AbstractClientHttpRequest {
 		});
 	}
 
+	@Override
+	protected HttpHeaders initReadOnlyHeaders() {
+		return HttpHeaders.readOnlyHttpHeaders(new JettyHeadersAdapter(this.jettyRequest.getHeaders()));
+	}
+
 	public ReactiveRequest toReactiveRequest() {
 		return this.builder.build();
 	}
-
 
 }

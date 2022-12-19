@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase;
-import org.springframework.core.SpringProperties;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
@@ -77,13 +76,6 @@ class ConfigurationClassBeanDefinitionReader {
 	private static final Log logger = LogFactory.getLog(ConfigurationClassBeanDefinitionReader.class);
 
 	private static final ScopeMetadataResolver scopeMetadataResolver = new AnnotationScopeMetadataResolver();
-
-	/**
-	 * Boolean flag controlled by a {@code spring.xml.ignore} system property that instructs Spring to
-	 * ignore XML, i.e. to not initialize the XML-related infrastructure.
-	 * <p>The default is "false".
-	 */
-	private static final boolean shouldIgnoreXml = SpringProperties.getFlag("spring.xml.ignore");
 
 	private final BeanDefinitionRegistry registry;
 
@@ -223,8 +215,8 @@ class ConfigurationClassBeanDefinitionReader {
 
 		if (metadata.isStatic()) {
 			// static @Bean method
-			if (configClass.getMetadata() instanceof StandardAnnotationMetadata) {
-				beanDef.setBeanClass(((StandardAnnotationMetadata) configClass.getMetadata()).getIntrospectedClass());
+			if (configClass.getMetadata() instanceof StandardAnnotationMetadata sam) {
+				beanDef.setBeanClass(sam.getIntrospectedClass());
 			}
 			else {
 				beanDef.setBeanClassName(configClass.getMetadata().getClassName());
@@ -237,8 +229,8 @@ class ConfigurationClassBeanDefinitionReader {
 			beanDef.setUniqueFactoryMethodName(methodName);
 		}
 
-		if (metadata instanceof StandardMethodMetadata) {
-			beanDef.setResolvedFactoryMethod(((StandardMethodMetadata) metadata).getIntrospectedMethod());
+		if (metadata instanceof StandardMethodMetadata sam) {
+			beanDef.setResolvedFactoryMethod(sam.getIntrospectedMethod());
 		}
 
 		beanDef.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_CONSTRUCTOR);
@@ -322,8 +314,8 @@ class ConfigurationClassBeanDefinitionReader {
 
 		// At this point, it's a top-level override (probably XML), just having been parsed
 		// before configuration class processing kicks in...
-		if (this.registry instanceof DefaultListableBeanFactory &&
-				!((DefaultListableBeanFactory) this.registry).isAllowBeanDefinitionOverriding()) {
+		if (this.registry instanceof DefaultListableBeanFactory dlbf &&
+				!dlbf.isAllowBeanDefinitionOverriding()) {
 			throw new BeanDefinitionStoreException(beanMethod.getConfigurationClass().getResource().getDescription(),
 					beanName, "@Bean definition illegally overridden by existing bean definition: " + existingBeanDef);
 		}
@@ -346,9 +338,6 @@ class ConfigurationClassBeanDefinitionReader {
 				if (StringUtils.endsWithIgnoreCase(resource, ".groovy")) {
 					// When clearly asking for Groovy, that's what they'll get...
 					readerClass = GroovyBeanDefinitionReader.class;
-				}
-				else if (shouldIgnoreXml) {
-					throw new UnsupportedOperationException("XML support disabled");
 				}
 				else {
 					// Primarily ".xml" files but for any other extension as well

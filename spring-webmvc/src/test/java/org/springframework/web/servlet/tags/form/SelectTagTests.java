@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.io.StringReader;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -402,7 +401,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(2);
+		assertThat(rootElement.elements()).hasSize(2);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -475,7 +474,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(2);
+		assertThat(rootElement.elements()).hasSize(2);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -524,7 +523,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(1);
+		assertThat(rootElement.elements()).hasSize(1);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -572,7 +571,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(2);
+		assertThat(rootElement.elements()).hasSize(2);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -618,7 +617,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(2);
+		assertThat(rootElement.elements()).hasSize(2);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -653,7 +652,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(2);
+		assertThat(rootElement.elements()).hasSize(2);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -729,7 +728,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 			SAXReader reader = new SAXReader();
 			Document document = reader.read(new StringReader(output));
 			Element rootElement = document.getRootElement();
-			assertThat(rootElement.elements().size()).isEqualTo(2);
+			assertThat(rootElement.elements()).hasSize(2);
 
 			Element selectElement = rootElement.element("select");
 			assertThat(selectElement.getName()).isEqualTo("select");
@@ -772,7 +771,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(2);
+		assertThat(rootElement.elements()).hasSize(2);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -801,7 +800,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(2);
+		assertThat(rootElement.elements()).hasSize(2);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -830,7 +829,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(2);
+		assertThat(rootElement.elements()).hasSize(2);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -859,7 +858,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(1);
+		assertThat(rootElement.elements()).hasSize(1);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -885,7 +884,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(2);
+		assertThat(rootElement.elements()).hasSize(2);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -914,7 +913,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 		SAXReader reader = new SAXReader();
 		Document document = reader.read(new StringReader(output));
 		Element rootElement = document.getRootElement();
-		assertThat(rootElement.elements().size()).isEqualTo(1);
+		assertThat(rootElement.elements()).hasSize(1);
 
 		Element selectElement = rootElement.element("select");
 		assertThat(selectElement.getName()).isEqualTo("select");
@@ -948,12 +947,7 @@ public class SelectTagTests extends AbstractFormTagTests {
 	}
 
 	private Map getCountryToLocaleMap() {
-		Map map = new TreeMap(new Comparator() {
-			@Override
-			public int compare(Object o1, Object o2) {
-				return ((Country)o1).getName().compareTo(((Country)o2).getName());
-			}
-		});
+		Map map = new TreeMap((o1, o2) -> ((Country)o1).getName().compareTo(((Country)o2).getName()));
 		map.put(Country.COUNTRY_AT, LOCALE_AT);
 		map.put(Country.COUNTRY_NL, LOCALE_NL);
 		map.put(Country.COUNTRY_US, Locale.US);

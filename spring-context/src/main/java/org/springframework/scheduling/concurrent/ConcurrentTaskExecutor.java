@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ import org.springframework.util.concurrent.ListenableFuture;
  * @see DefaultManagedTaskExecutor
  * @see ThreadPoolTaskExecutor
  */
+@SuppressWarnings("deprecation")
 public class ConcurrentTaskExecutor implements AsyncListenableTaskExecutor, SchedulingTaskExecutor {
 
 	@Nullable
@@ -147,6 +148,7 @@ public class ConcurrentTaskExecutor implements AsyncListenableTaskExecutor, Sche
 		this.adaptedExecutor.execute(task);
 	}
 
+	@Deprecated
 	@Override
 	public void execute(Runnable task, long startTimeout) {
 		this.adaptedExecutor.execute(task, startTimeout);

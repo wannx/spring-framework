@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -73,25 +72,22 @@ public abstract class SharedEntityManagerCreator {
 
 	private static final Map<Class<?>, Class<?>[]> cachedQueryInterfaces = new ConcurrentReferenceHashMap<>(4);
 
-	private static final Set<String> transactionRequiringMethods = new HashSet<>(8);
+	private static final Set<String> transactionRequiringMethods = Set.of(
+			"joinTransaction",
+			"flush",
+			"persist",
+			"merge",
+			"remove",
+			"refresh");
 
-	private static final Set<String> queryTerminatingMethods = new HashSet<>(8);
-
-	static {
-		transactionRequiringMethods.add("joinTransaction");
-		transactionRequiringMethods.add("flush");
-		transactionRequiringMethods.add("persist");
-		transactionRequiringMethods.add("merge");
-		transactionRequiringMethods.add("remove");
-		transactionRequiringMethods.add("refresh");
-
-		queryTerminatingMethods.add("execute");  // JPA 2.1 StoredProcedureQuery
-		queryTerminatingMethods.add("executeUpdate");
-		queryTerminatingMethods.add("getSingleResult");
-		queryTerminatingMethods.add("getResultStream");
-		queryTerminatingMethods.add("getResultList");
-		queryTerminatingMethods.add("list");  // Hibernate Query.list() method
-	}
+	private static final Set<String> queryTerminatingMethods = Set.of(
+			"execute",  // JPA 2.1 StoredProcedureQuery
+			"executeUpdate",
+			"getSingleResult",
+			"getResultStream",
+			"getResultList",
+			"list"  // Hibernate Query.list() method
+		);
 
 
 	/**
@@ -266,13 +262,14 @@ public abstract class SharedEntityManagerCreator {
 					this.targetFactory, this.properties, this.synchronizedWithTransaction);
 
 			switch (method.getName()) {
-				case "getTargetEntityManager":
+				case "getTargetEntityManager" -> {
 					// Handle EntityManagerProxy interface.
 					if (target == null) {
 						throw new IllegalStateException("No transactional EntityManager available");
 					}
 					return target;
-				case "unwrap":
+				}
+				case "unwrap" -> {
 					Class<?> targetClass = (Class<?>) args[0];
 					if (targetClass == null) {
 						return (target != null ? target : proxy);
@@ -281,8 +278,8 @@ public abstract class SharedEntityManagerCreator {
 					if (target == null) {
 						throw new IllegalStateException("No transactional EntityManager available");
 					}
-					// Still perform unwrap call on target EntityManager.
-					break;
+				}
+				// Still perform unwrap call on target EntityManager.
 			}
 
 			if (transactionRequiringMethods.contains(method.getName())) {

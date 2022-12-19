@@ -98,7 +98,7 @@ abstract class AbstractAspectJAdvisorFactoryTests {
 	}
 
 	@Test
-	void perTargetAspect() throws SecurityException, NoSuchMethodException {
+	void perTargetAspect() throws Exception {
 		TestBean target = new TestBean();
 		int realAge = 65;
 		target.setAge(realAge);
@@ -130,7 +130,7 @@ abstract class AbstractAspectJAdvisorFactoryTests {
 	}
 
 	@Test
-	void multiplePerTargetAspects() throws SecurityException, NoSuchMethodException {
+	void multiplePerTargetAspects() throws Exception {
 		TestBean target = new TestBean();
 		int realAge = 65;
 		target.setAge(realAge);
@@ -158,7 +158,7 @@ abstract class AbstractAspectJAdvisorFactoryTests {
 	}
 
 	@Test
-	void multiplePerTargetAspectsWithOrderAnnotation() throws SecurityException, NoSuchMethodException {
+	void multiplePerTargetAspectsWithOrderAnnotation() throws Exception {
 		TestBean target = new TestBean();
 		int realAge = 65;
 		target.setAge(realAge);
@@ -184,7 +184,7 @@ abstract class AbstractAspectJAdvisorFactoryTests {
 	}
 
 	@Test
-	void perThisAspect() throws SecurityException, NoSuchMethodException {
+	void perThisAspect() throws Exception {
 		TestBean target = new TestBean();
 		int realAge = 65;
 		target.setAge(realAge);
@@ -195,7 +195,7 @@ abstract class AbstractAspectJAdvisorFactoryTests {
 
 		Advised advised = (Advised) itb;
 		// Will be ExposeInvocationInterceptor, synthetic instantiation advisor, 2 method advisors
-		assertThat(advised.getAdvisors().length).isEqualTo(4);
+		assertThat(advised.getAdvisors()).hasSize(4);
 		ReflectiveAspectJAdvisorFactory.SyntheticInstantiationAdvisor sia =
 				(ReflectiveAspectJAdvisorFactory.SyntheticInstantiationAdvisor) advised.getAdvisors()[1];
 		assertThat(sia.getPointcut().getMethodMatcher().matches(TestBean.class.getMethod("getSpouse"), null)).isTrue();
@@ -220,7 +220,7 @@ abstract class AbstractAspectJAdvisorFactoryTests {
 	}
 
 	@Test
-	void perTypeWithinAspect() throws SecurityException, NoSuchMethodException {
+	void perTypeWithinAspect() throws Exception {
 		TestBean target = new TestBean();
 		int realAge = 65;
 		target.setAge(realAge);
@@ -231,7 +231,7 @@ abstract class AbstractAspectJAdvisorFactoryTests {
 
 		Advised advised = (Advised) itb;
 		// Will be ExposeInvocationInterceptor, synthetic instantiation advisor, 2 method advisors
-		assertThat(advised.getAdvisors().length).isEqualTo(4);
+		assertThat(advised.getAdvisors()).hasSize(4);
 		ReflectiveAspectJAdvisorFactory.SyntheticInstantiationAdvisor sia =
 				(ReflectiveAspectJAdvisorFactory.SyntheticInstantiationAdvisor) advised.getAdvisors()[1];
 		assertThat(sia.getPointcut().getMethodMatcher().matches(TestBean.class.getMethod("getSpouse"), null)).isTrue();
@@ -366,7 +366,7 @@ abstract class AbstractAspectJAdvisorFactoryTests {
 				new SingletonMetadataAwareAspectInstanceFactory(new MakeLockable(), "someBean")),
 		CannotBeUnlocked.class).isEmpty()).isTrue();
 		assertThat(AopUtils.findAdvisorsThatCanApply(getFixture().getAdvisors(
-		new SingletonMetadataAwareAspectInstanceFactory(new MakeLockable(),"someBean")), NotLockable.class).size()).isEqualTo(2);
+		new SingletonMetadataAwareAspectInstanceFactory(new MakeLockable(),"someBean")), NotLockable.class)).hasSize(2);
 	}
 
 	@Test
@@ -931,7 +931,7 @@ abstract class AbstractMakeModifiable {
 			return setter.getDeclaringClass().getMethod(getterName);
 		}
 		catch (NoSuchMethodException ex) {
-			// must be write only
+			// must be write-only
 			return null;
 		}
 	}

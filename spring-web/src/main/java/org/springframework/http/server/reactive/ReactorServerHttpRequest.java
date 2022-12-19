@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.ssl.SslHandler;
 import org.apache.commons.logging.Log;
 import reactor.core.publisher.Flux;
+import reactor.netty.ChannelOperationsId;
 import reactor.netty.Connection;
 import reactor.netty.http.server.HttpServerRequest;
 
@@ -39,7 +40,6 @@ import org.springframework.http.HttpLogging;
 import org.springframework.http.HttpMethod;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -51,10 +51,6 @@ import org.springframework.util.MultiValueMap;
  * @since 5.0
  */
 class ReactorServerHttpRequest extends AbstractServerHttpRequest {
-
-	/** Reactor Netty 1.0.5+. */
-	static final boolean reactorNettyRequestChannelOperationsIdPresent = ClassUtils.isPresent(
-			"reactor.netty.ChannelOperationsId", ReactorServerHttpRequest.class.getClassLoader());
 
 	private static final Log logger = HttpLogging.forLogName(ReactorServerHttpRequest.class);
 
@@ -78,7 +74,7 @@ class ReactorServerHttpRequest extends AbstractServerHttpRequest {
 
 	private static URI initUri(HttpServerRequest request) throws URISyntaxException {
 		Assert.notNull(request, "HttpServerRequest must not be null");
-		return new URI(resolveBaseUrl(request).toString() + resolveRequestUri(request));
+		return new URI(resolveBaseUrl(request) + resolveRequestUri(request));
 	}
 
 	private static URI resolveBaseUrl(HttpServerRequest request) throws URISyntaxException {
@@ -145,12 +141,6 @@ class ReactorServerHttpRequest extends AbstractServerHttpRequest {
 	}
 
 	@Override
-	@Deprecated
-	public String getMethodValue() {
-		return this.request.method().name();
-	}
-
-	@Override
 	protected MultiValueMap<String, HttpCookie> initCookies() {
 		MultiValueMap<String, HttpCookie> cookies = new LinkedMultiValueMap<>();
 		for (CharSequence name : this.request.cookies().keySet()) {
@@ -203,28 +193,27 @@ class ReactorServerHttpRequest extends AbstractServerHttpRequest {
 	@Override
 	@Nullable
 	protected String initId() {
-		if (reactorNettyRequestChannelOperationsIdPresent) {
-			return (ChannelOperationsIdHelper.getId(this.request));
-		}
-		if (this.request instanceof Connection) {
-			return ((Connection) this.request).channel().id().asShortText() +
+		if (this.request instanceof Connection connection) {
+			return connection.channel().id().asShortText() +
 					"-" + logPrefixIndex.incrementAndGet();
 		}
 		return null;
 	}
 
-
-	private static class ChannelOperationsIdHelper {
-
-		@Nullable
-		public static String getId(HttpServerRequest request) {
-			if (request instanceof reactor.netty.ChannelOperationsId) {
-				return (logger.isDebugEnabled() ?
-						((reactor.netty.ChannelOperationsId) request).asLongText() :
-						((reactor.netty.ChannelOperationsId) request).asShortText());
-			}
-			return null;
+	@Override
+	protected String initLogPrefix() {
+		String id = null;
+		if (this.request instanceof ChannelOperationsId operationsId) {
+			id = (logger.isDebugEnabled() ? operationsId.asLongText() : operationsId.asShortText());
 		}
+		if (id != null) {
+			return id;
+		}
+		if (this.request instanceof Connection connection) {
+			return connection.channel().id().asShortText() +
+					"-" + logPrefixIndex.incrementAndGet();
+		}
+		return getId();
 	}
 
 }

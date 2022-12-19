@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ public abstract class ServletRequestPathUtils {
 	 */
 	public static RequestPath getParsedRequestPath(ServletRequest request) {
 		RequestPath path = (RequestPath) request.getAttribute(PATH_ATTRIBUTE);
-		Assert.notNull(path, "Expected parsed RequestPath in request attribute \"" + PATH_ATTRIBUTE + "\".");
+		Assert.notNull(path, () -> "Expected parsed RequestPath in request attribute \"" + PATH_ATTRIBUTE + "\".");
 		return path;
 	}
 
@@ -159,8 +159,8 @@ public abstract class ServletRequestPathUtils {
 	 */
 	public static String getCachedPathValue(ServletRequest request) {
 		Object path = getCachedPath(request);
-		if (path instanceof PathContainer) {
-			String value = ((PathContainer) path).value();
+		if (path instanceof PathContainer pathContainer) {
+			String value = pathContainer.value();
 			path = UrlPathHelper.defaultInstance.removeSemicolonContent(value);
 		}
 		return (String) path;
@@ -249,12 +249,15 @@ public abstract class ServletRequestPathUtils {
 			if (requestUri == null) {
 				requestUri = request.getRequestURI();
 			}
-			if (UrlPathHelper.servlet4Present) {
-				String servletPathPrefix = Servlet4Delegate.getServletPathPrefix(request);
-				if (StringUtils.hasText(servletPathPrefix)) {
-					return new ServletRequestPath(requestUri, request.getContextPath(), servletPathPrefix);
+
+			String servletPathPrefix = Servlet4Delegate.getServletPathPrefix(request);
+			if (StringUtils.hasText(servletPathPrefix)) {
+				if (servletPathPrefix.endsWith("/")) {
+					servletPathPrefix = servletPathPrefix.substring(0, servletPathPrefix.length() - 1);
 				}
+				return new ServletRequestPath(requestUri, request.getContextPath(), servletPathPrefix);
 			}
+
 			return RequestPath.parse(requestUri, request.getContextPath());
 		}
 	}
@@ -272,8 +275,7 @@ public abstract class ServletRequestPathUtils {
 			if (mapping == null) {
 				mapping = request.getHttpServletMapping();
 			}
-			MappingMatch match = mapping.getMappingMatch();
-			if (!ObjectUtils.nullSafeEquals(match, MappingMatch.PATH)) {
+			if (!ObjectUtils.nullSafeEquals(mapping.getMappingMatch(), MappingMatch.PATH)) {
 				return null;
 			}
 			String servletPath = (String) request.getAttribute(WebUtils.INCLUDE_SERVLET_PATH_ATTRIBUTE);

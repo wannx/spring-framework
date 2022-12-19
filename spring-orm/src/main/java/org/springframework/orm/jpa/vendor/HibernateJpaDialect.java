@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,16 +70,17 @@ import org.springframework.transaction.InvalidIsolationLevelException;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.ResourceTransactionDefinition;
+import org.springframework.util.ReflectionUtils;
 
 /**
- * {@link org.springframework.orm.jpa.JpaDialect} implementation for
- * Hibernate EntityManager.
+ * {@link org.springframework.orm.jpa.JpaDialect} implementation for Hibernate.
+ * Compatible with Hibernate ORM 5.5/5.6 as well as 6.0/6.1.
  *
  * @author Juergen Hoeller
  * @author Costin Leau
  * @since 2.0
  * @see HibernateJpaVendorAdapter
- * @see org.hibernate.Session#setFlushMode
+ * @see org.hibernate.Session#setHibernateFlushMode
  * @see org.hibernate.Transaction#setTimeout
  */
 @SuppressWarnings("serial")
@@ -148,7 +149,7 @@ public class HibernateJpaDialect extends DefaultJpaDialect {
 		if (isolationLevelNeeded || definition.isReadOnly()) {
 			if (this.prepareConnection && ConnectionReleaseMode.ON_CLOSE.equals(
 					session.getJdbcCoordinator().getLogicalConnection().getConnectionHandlingMode().getReleaseMode())) {
-				preparedCon = session.connection();
+				preparedCon = session.getJdbcCoordinator().getLogicalConnection().getPhysicalConnection();
 				previousIsolationLevel = DataSourceUtils.prepareConnectionForTransaction(preparedCon, definition);
 			}
 			else if (isolationLevelNeeded) {
@@ -295,13 +296,13 @@ public class HibernateJpaDialect extends DefaultJpaDialect {
 			return new InvalidDataAccessApiUsageException(ex.getMessage(), ex);
 		}
 		if (ex instanceof UnresolvableObjectException hibEx) {
-			return new ObjectRetrievalFailureException(hibEx.getEntityName(), hibEx.getIdentifier(), ex.getMessage(), ex);
+			return new ObjectRetrievalFailureException(hibEx.getEntityName(), getIdentifier(hibEx), ex.getMessage(), ex);
 		}
 		if (ex instanceof WrongClassException hibEx) {
-			return new ObjectRetrievalFailureException(hibEx.getEntityName(), hibEx.getIdentifier(), ex.getMessage(), ex);
+			return new ObjectRetrievalFailureException(hibEx.getEntityName(), getIdentifier(hibEx), ex.getMessage(), ex);
 		}
 		if (ex instanceof StaleObjectStateException hibEx) {
-			return new ObjectOptimisticLockingFailureException(hibEx.getEntityName(), hibEx.getIdentifier(), ex);
+			return new ObjectOptimisticLockingFailureException(hibEx.getEntityName(), getIdentifier(hibEx), ex.getMessage(), ex);
 		}
 		if (ex instanceof StaleStateException) {
 			return new ObjectOptimisticLockingFailureException(ex.getMessage(), ex);
@@ -322,6 +323,18 @@ public class HibernateJpaDialect extends DefaultJpaDialect {
 
 	protected SessionImplementor getSession(EntityManager entityManager) {
 		return entityManager.unwrap(SessionImplementor.class);
+	}
+
+	@Nullable
+	protected Object getIdentifier(HibernateException hibEx) {
+		try {
+			// getIdentifier declares Serializable return value on 5.x but Object on 6.x
+			// -> not binary compatible, let's invoke it reflectively for the time being
+			return ReflectionUtils.invokeMethod(hibEx.getClass().getMethod("getIdentifier"), hibEx);
+		}
+		catch (NoSuchMethodException ex) {
+			return null;
+		}
 	}
 
 
@@ -349,16 +362,15 @@ public class HibernateJpaDialect extends DefaultJpaDialect {
 			this.readOnly = readOnly;
 		}
 
-		@SuppressWarnings("deprecation")
 		public void resetSessionState() {
 			if (this.previousFlushMode != null) {
-				this.session.setFlushMode(this.previousFlushMode);
+				this.session.setHibernateFlushMode(this.previousFlushMode);
 			}
 			if (this.needsConnectionReset &&
 					this.session.getJdbcCoordinator().getLogicalConnection().isPhysicallyConnected()) {
-				Connection conToReset = this.session.connection();
+				Connection con = this.session.getJdbcCoordinator().getLogicalConnection().getPhysicalConnection();
 				DataSourceUtils.resetConnectionAfterTransaction(
-						conToReset, this.previousIsolationLevel, this.readOnly);
+						con, this.previousIsolationLevel, this.readOnly);
 			}
 		}
 	}
@@ -374,7 +386,7 @@ public class HibernateJpaDialect extends DefaultJpaDialect {
 
 		@Override
 		public Connection getConnection() {
-			return this.session.connection();
+			return this.session.getJdbcCoordinator().getLogicalConnection().getPhysicalConnection();
 		}
 	}
 

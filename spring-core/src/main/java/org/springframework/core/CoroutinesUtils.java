@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,13 @@ import java.lang.reflect.Method;
 import java.util.Objects;
 
 import kotlin.Unit;
+import kotlin.coroutines.CoroutineContext;
 import kotlin.jvm.JvmClassMappingKt;
+import kotlin.reflect.KClass;
 import kotlin.reflect.KClassifier;
 import kotlin.reflect.KFunction;
 import kotlin.reflect.full.KCallables;
+import kotlin.reflect.jvm.KCallablesJvm;
 import kotlin.reflect.jvm.ReflectJvmMapping;
 import kotlinx.coroutines.BuildersKt;
 import kotlinx.coroutines.CoroutineStart;
@@ -66,17 +69,53 @@ public abstract class CoroutinesUtils {
 
 	/**
 	 * Invoke a suspending function and converts it to {@link Mono} or
-	 * {@link Flux}.
+	 * {@link Flux}. Uses an {@linkplain Dispatchers#getUnconfined() unconfined}
+	 * dispatcher.
+	 * @param method the suspending function to invoke
+	 * @param target the target to invoke {@code method} on
+	 * @param args the function arguments
+	 * @return the method invocation result as reactive stream
 	 */
-	public static Publisher<?> invokeSuspendingFunction(Method method, Object target, Object... args) {
+	public static Publisher<?> invokeSuspendingFunction(Method method, Object target,
+			Object... args) {
+		return invokeSuspendingFunction(Dispatchers.getUnconfined(), method, target, args);
+	}
+
+	/**
+	 * Invoke a suspending function and converts it to {@link Mono} or
+	 * {@link Flux}.
+	 * @param context the coroutine context to use
+	 * @param method the suspending function to invoke
+	 * @param target the target to invoke {@code method} on
+	 * @param args the function arguments
+	 * @return the method invocation result as reactive stream
+	 * @since 6.0
+	 */
+	@SuppressWarnings("deprecation")
+	public static Publisher<?> invokeSuspendingFunction(CoroutineContext context, Method method, Object target,
+			Object... args) {
+
 		KFunction<?> function = Objects.requireNonNull(ReflectJvmMapping.getKotlinFunction(method));
-		KClassifier classifier = function.getReturnType().getClassifier();
-		Mono<Object> mono = MonoKt.mono(Dispatchers.getUnconfined(), (scope, continuation) ->
+		if (method.isAccessible() && !KCallablesJvm.isAccessible(function)) {
+			KCallablesJvm.setAccessible(function, true);
+		}
+		Mono<Object> mono = MonoKt.mono(context, (scope, continuation) ->
 					KCallables.callSuspend(function, getSuspendedFunctionArgs(target, args), continuation))
 				.filter(result -> !Objects.equals(result, Unit.INSTANCE))
 				.onErrorMap(InvocationTargetException.class, InvocationTargetException::getTargetException);
-		if (classifier != null && classifier.equals(JvmClassMappingKt.getKotlinClass(Flow.class))) {
-			return mono.flatMapMany(CoroutinesUtils::asFlux);
+
+		KClassifier returnType = function.getReturnType().getClassifier();
+		if (returnType != null) {
+			if (returnType.equals(JvmClassMappingKt.getKotlinClass(Flow.class))) {
+				return mono.flatMapMany(CoroutinesUtils::asFlux);
+			}
+			else if (returnType.equals(JvmClassMappingKt.getKotlinClass(Mono.class))) {
+				return mono.flatMap(o -> ((Mono<?>)o));
+			}
+			else if (returnType instanceof KClass<?> kClass &&
+					Publisher.class.isAssignableFrom(JvmClassMappingKt.getJavaClass(kClass))) {
+				return mono.flatMapMany(o -> ((Publisher<?>)o));
+			}
 		}
 		return mono;
 	}

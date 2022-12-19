@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,6 @@ import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeTypeUtils;
-import org.springframework.util.StreamUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.annotation.ValidationAnnotationUtils;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -167,7 +166,7 @@ public abstract class AbstractMessageConverterMethodArgumentResolver implements 
 		HttpMethod httpMethod = (inputMessage instanceof HttpRequest ? ((HttpRequest) inputMessage).getMethod() : null);
 		Object body = NO_VALUE;
 
-		EmptyBodyCheckingHttpInputMessage message;
+		EmptyBodyCheckingHttpInputMessage message = null;
 		try {
 			message = new EmptyBodyCheckingHttpInputMessage(inputMessage);
 
@@ -194,6 +193,11 @@ public abstract class AbstractMessageConverterMethodArgumentResolver implements 
 		catch (IOException ex) {
 			throw new HttpMessageNotReadableException("I/O error while reading input message", ex, inputMessage);
 		}
+		finally {
+			if (message != null && message.hasBody()) {
+				closeStreamIfNecessary(message.getBody());
+			}
+		}
 
 		if (body == NO_VALUE) {
 			if (httpMethod == null || !SUPPORTED_METHODS.contains(httpMethod) ||
@@ -201,7 +205,7 @@ public abstract class AbstractMessageConverterMethodArgumentResolver implements 
 				return null;
 			}
 			throw new HttpMediaTypeNotSupportedException(contentType,
-					getSupportedMediaTypes(targetClass != null ? targetClass : Object.class));
+					getSupportedMediaTypes(targetClass != null ? targetClass : Object.class), httpMethod);
 		}
 
 		MediaType selectedContentType = contentType;
@@ -296,6 +300,15 @@ public abstract class AbstractMessageConverterMethodArgumentResolver implements 
 		return arg;
 	}
 
+	/**
+	 * Allow for closing the body stream if necessary,
+	 * e.g. for part streams in a multipart request.
+	 */
+	void closeStreamIfNecessary(InputStream body) {
+		// No-op by default: A standard HttpInputMessage exposes the HTTP request stream
+		// (ServletRequest#getInputStream), with its lifecycle managed by the container.
+	}
+
 
 	private static class EmptyBodyCheckingHttpInputMessage implements HttpInputMessage {
 
@@ -332,7 +345,7 @@ public abstract class AbstractMessageConverterMethodArgumentResolver implements 
 
 		@Override
 		public InputStream getBody() {
-			return (this.body != null ? this.body : StreamUtils.emptyInput());
+			return (this.body != null ? this.body : InputStream.nullInputStream());
 		}
 
 		public boolean hasBody() {

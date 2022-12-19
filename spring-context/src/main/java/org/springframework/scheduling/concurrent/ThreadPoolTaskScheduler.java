@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2002-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@
 package org.springframework.scheduling.concurrent;
 
 import java.time.Clock;
-import java.util.Date;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
@@ -58,7 +59,7 @@ import org.springframework.util.concurrent.ListenableFutureTask;
  * @see #setThreadFactory
  * @see #setErrorHandler
  */
-@SuppressWarnings("serial")
+@SuppressWarnings({"serial", "deprecation"})
 public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 		implements AsyncListenableTaskExecutor, SchedulingTaskExecutor, TaskScheduler {
 
@@ -281,6 +282,7 @@ public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 		}
 	}
 
+	@Deprecated
 	@Override
 	public void execute(Runnable task, long startTimeout) {
 		execute(task);
@@ -376,11 +378,11 @@ public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 	}
 
 	@Override
-	public ScheduledFuture<?> schedule(Runnable task, Date startTime) {
+	public ScheduledFuture<?> schedule(Runnable task, Instant startTime) {
 		ScheduledExecutorService executor = getScheduledExecutor();
-		long initialDelay = startTime.getTime() - this.clock.millis();
+		Duration initialDelay = Duration.between(this.clock.instant(), startTime);
 		try {
-			return executor.schedule(errorHandlingTask(task, false), initialDelay, TimeUnit.MILLISECONDS);
+			return executor.schedule(errorHandlingTask(task, false), initialDelay.toMillis(), TimeUnit.MILLISECONDS);
 		}
 		catch (RejectedExecutionException ex) {
 			throw new TaskRejectedException("Executor [" + executor + "] did not accept task: " + task, ex);
@@ -388,11 +390,11 @@ public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 	}
 
 	@Override
-	public ScheduledFuture<?> scheduleAtFixedRate(Runnable task, Date startTime, long period) {
+	public ScheduledFuture<?> scheduleAtFixedRate(Runnable task, Instant startTime, Duration period) {
 		ScheduledExecutorService executor = getScheduledExecutor();
-		long initialDelay = startTime.getTime() - this.clock.millis();
+		Duration initialDelay = Duration.between(this.clock.instant(), startTime);
 		try {
-			return executor.scheduleAtFixedRate(errorHandlingTask(task, true), initialDelay, period, TimeUnit.MILLISECONDS);
+			return executor.scheduleAtFixedRate(errorHandlingTask(task, true), initialDelay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS);
 		}
 		catch (RejectedExecutionException ex) {
 			throw new TaskRejectedException("Executor [" + executor + "] did not accept task: " + task, ex);
@@ -400,10 +402,10 @@ public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 	}
 
 	@Override
-	public ScheduledFuture<?> scheduleAtFixedRate(Runnable task, long period) {
+	public ScheduledFuture<?> scheduleAtFixedRate(Runnable task, Duration period) {
 		ScheduledExecutorService executor = getScheduledExecutor();
 		try {
-			return executor.scheduleAtFixedRate(errorHandlingTask(task, true), 0, period, TimeUnit.MILLISECONDS);
+			return executor.scheduleAtFixedRate(errorHandlingTask(task, true), 0, period.toMillis(), TimeUnit.MILLISECONDS);
 		}
 		catch (RejectedExecutionException ex) {
 			throw new TaskRejectedException("Executor [" + executor + "] did not accept task: " + task, ex);
@@ -411,11 +413,11 @@ public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 	}
 
 	@Override
-	public ScheduledFuture<?> scheduleWithFixedDelay(Runnable task, Date startTime, long delay) {
+	public ScheduledFuture<?> scheduleWithFixedDelay(Runnable task, Instant startTime, Duration delay) {
 		ScheduledExecutorService executor = getScheduledExecutor();
-		long initialDelay = startTime.getTime() - this.clock.millis();
+		Duration initialDelay = Duration.between(this.clock.instant(), startTime);
 		try {
-			return executor.scheduleWithFixedDelay(errorHandlingTask(task, true), initialDelay, delay, TimeUnit.MILLISECONDS);
+			return executor.scheduleWithFixedDelay(errorHandlingTask(task, true), initialDelay.toMillis(), delay.toMillis(), TimeUnit.MILLISECONDS);
 		}
 		catch (RejectedExecutionException ex) {
 			throw new TaskRejectedException("Executor [" + executor + "] did not accept task: " + task, ex);
@@ -423,10 +425,10 @@ public class ThreadPoolTaskScheduler extends ExecutorConfigurationSupport
 	}
 
 	@Override
-	public ScheduledFuture<?> scheduleWithFixedDelay(Runnable task, long delay) {
+	public ScheduledFuture<?> scheduleWithFixedDelay(Runnable task, Duration delay) {
 		ScheduledExecutorService executor = getScheduledExecutor();
 		try {
-			return executor.scheduleWithFixedDelay(errorHandlingTask(task, true), 0, delay, TimeUnit.MILLISECONDS);
+			return executor.scheduleWithFixedDelay(errorHandlingTask(task, true), 0, delay.toMillis(), TimeUnit.MILLISECONDS);
 		}
 		catch (RejectedExecutionException ex) {
 			throw new TaskRejectedException("Executor [" + executor + "] did not accept task: " + task, ex);

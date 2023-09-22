@@ -13,15 +13,15 @@ public class MainStart {
 		 */
 //		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(com.asen.ioc.MainConfig.class);
 
-		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(com.asen.ioc.MainConfig.class);
-		Apple apple = (Apple) ctx.getBean("apple");
+//		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(com.asen.ioc.MainConfig.class);
+//		Apple apple = (Apple) ctx.getBean("apple");
 
 		/**
 		 * AOP
 		 */
-//		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(com.asen.aop.MainConfig.class);
-//		Calculate calculate = (Calculate) ctx.getBean("calculate");
-//		calculate.add(1, 3);
+		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(com.asen.aop.MainConfig.class);
+		Calculate calculate = (Calculate) ctx.getBean("calculate");
+		calculate.add(1, 3);
 
 		/**
 		 * TRANSACTION

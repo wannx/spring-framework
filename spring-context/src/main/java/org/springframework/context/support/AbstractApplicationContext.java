@@ -529,6 +529,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				postProcessBeanFactory(beanFactory);
 
 				// Invoke factory processors registered as beans in the context.
+				// asen-注册自定义配置类关联到的类到beanDefinitionMap，比如@Import，@Bean，@ComponentScan扫描到的其他类
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
@@ -538,15 +539,18 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
+				// asen-1、初始化事件多波器
 				initApplicationEventMulticaster();
 
 				// Initialize other special beans in specific context subclasses.
 				onRefresh();
 
 				// Check for listener beans and register them.
+				// asen-2、注册监听器，并通过调用listener.onApplicationEvent(event);回调自定义方法
 				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
+				// asen-doGetBean方法入口
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.

@@ -109,6 +109,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	 * @see #refresh
 	 */
 	public GenericApplicationContext() {
+		// asen-初始化DefaultListableBeanFactory关键类
 		this.beanFactory = new DefaultListableBeanFactory();
 	}
 
